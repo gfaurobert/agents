@@ -26,10 +26,10 @@ Guides the user through tailoring their CV and generating a cover letter + PDF f
 **Always** create a dedicated subfolder before writing any artifact. Use this naming pattern:
 
 ```
-~/job-applications/<company-name>-<role-slug>-<YYYY-MM-DD>/
+~/Nextcloud/Documents/CV/<company-name>-<role-slug>-<YYYY-MM-DD>/
 ```
 
-Example: `~/job-applications/chefslist-pm-2026-05-16/`
+Example: `~/Nextcloud/Documents/CV/chefslist-pm-2026-05-16/`
 
 Derive from the job description:
 - `<company-name>`: lowercase, no spaces (hyphens ok)
@@ -41,8 +41,9 @@ Create the folder at the start of Phase 6 (before writing the tailored CV JSON).
 | Artifact | Filename |
 |----------|----------|
 | CV JSON | `cv-tailored.json` |
-| CV PDF | `cv-tailored.pdf` |
+| CV PDF | `Gregor_Faurobert_$role_$company.pdf` |
 | Cover letter (Markdown) | `cover-letter.md` |
+| Cover letter (HTML) | `cover-letter.html` |
 | Cover letter (PDF) | `cover-letter.pdf` |
 
 If the folder already exists, reuse it (don't overwrite unless the user confirms).
@@ -128,18 +129,6 @@ Ask user to approve before touching the CV. Also ask: "Should I generate the CV 
 
 ### Phase 6 — Tailor the CV
 
-1. **Strategic fit assessment** — for each of the top 2 company needs, map which parts of the CV demonstrate relevant capability. Be honest about gaps.
-2. **Keyword alignment** — extract hard requirements from the job description and check CV coverage
-3. **Tailoring strategy** — which CV sections to adjust, driven by needs, not keywords:
-   - Rewrite the **professional summary** to position the candidate as the answer to the company's needs
-   - Reorder/rephrase **experience bullet points** to surface the most relevant achievements first
-   - Prioritize **skills** that directly address the identified needs
-   - Add any genuinely missing keywords naturally (don't fabricate)
-
-Present the strategy to the user for approval before proceeding.
-
-### Phase 6 — Tailor the CV
-
 If the target language differs from what was loaded in Phase 2, call `mcp_cv_workflow_get_full_cv` again with the correct language to get the CV in that language as a base.
 
 **First**: create the output folder (see Output Folder Convention above).
@@ -159,35 +148,84 @@ If validation fails, fix the issues and re-validate. Do not proceed until schema
 
 ### Phase 8 — Write the Cover Letter
 
-Write a cover letter as markdown text:
+Write letter content only. Layout/CSS handled by the skill template — do not write HTML.
 
-**Structure:**
-1. **Header**: User's name, contact info, date, company name
-2. **Opening paragraph**: Role being applied for, how they found it, one-sentence hook
-3. **Body 1**: Why this company — show research, connect to company mission/values
-4. **Body 2**: Why this role — map 2-3 specific CV achievements to job requirements
-5. **Body 3**: What they'll bring — unique value proposition, cultural fit
-6. **Closing**: Call to action, availability for interview, thank you
+**Mandatory: run the `witty-writer` skill on the letter body before saving.** Agents cannot invoke skills automatically, but you must follow both workflows in sequence:
 
-**Tone guidelines:**
-- Confident but not arrogant
-- Specific, not generic (reference actual job requirements)
-- ~300-400 words (1 page)
-- No AI clichés ("I am thrilled", "I believe I am the perfect fit")
+1. **Draft** (`job-application-expert` — this phase): structure, facts, role fit, ~300–400 words. Use frontmatter + body paragraphs. No HTML.
+2. **Voice pass** (`witty-writer` at `~/.agents/skills/witty-writer/SKILL.md`): read that skill fully, then rewrite **only the body paragraphs** (content after the closing `---` of frontmatter, or everything after the salutation in legacy format). Keep every fact, metric, company name, and claim from the draft; do not add new experience. Make it punchy, specific, and human — cut template phrasing and AI clichés. Preserve `lang` and formal business tone for DE/FR.
+3. **Save** the witty-writer output as `cover-letter.md` in the application folder.
 
-Save the cover letter as `cover-letter.md` in the output folder.
+If the user wants to compare drafts, also save the pre–witty-writer version as `cover-letter.draft.md` (optional, only when asked).
 
-### Phase 8b — Convert Cover Letter to PDF
+Do not skip the witty-writer pass to save time.
 
-Convert the cover letter markdown to PDF using Chromium headless:
+**Preferred format** (`cover-letter.md` with YAML frontmatter + body paragraphs):
 
-1. Convert markdown to HTML using Python stdlib (regex-based — no external deps needed for simple cover letters with headers, bold, and paragraphs)
-2. Write a minimal HTML wrapper with basic print-friendly CSS (Helvetica, 11pt, A4 margins)
-3. Run: `chromium --headless --disable-gpu --print-to-pdf=<output-folder>/cover-letter.pdf --no-margins /tmp/cover-letter.html`
+```markdown
+---
+lang: en
+date: 2026-05-18
+company: Example GmbH
+subject: "Re: Senior Product Manager"
+salutation: "Dear Hiring Team,"
+closing: "Sincerely,"
+signature: "Gregor Faurobert"
+---
 
-Save the resulting PDF as `cover-letter.pdf` in the output folder.
+Opening paragraph...
 
-If Chromium is not available, skip this phase and note it in the final summary.
+Body paragraphs (blank line between each)...
+```
+
+- `lang`: `en`, `de`, or `fr` (same as CV/cover letter language)
+- `date`: `YYYY-MM-DD` preferred; script formats for locale
+- `company` / optional `company_address`: recipient block
+- `subject`: optional; DE adds `Betreff:`, FR adds `Objet :`
+- Omit `name` / `contact` when `cv-tailored.json` is in the same folder (filled from CV)
+
+**Legacy format** (still supported): markdown with name, contact, date, company, bold or `Re:` subject line, salutation, paragraphs, closing, signature — same structure as past applications.
+
+**Content structure:**
+1. Opening: role, hook
+2. Why this company
+3. Why this role (2–3 CV proofs)
+4. What you bring
+5. Close: interview availability, thanks
+
+**Tone (after witty-writer):** confident, direct, specific, ~300–400 words — see `witty-writer` skill for rhythm and anti-boilerplate rules.
+
+Final artifact: `cover-letter.md` (post–witty-writer). Render that file in Phase 8b, not the draft.
+
+### Phase 8b — Render Cover Letter HTML + PDF
+
+Do **not** hand-build HTML. Use the skill template + render script.
+
+**Paths** (skill root: `~/.agents/skills/job-application-expert/`):
+
+| File | Role |
+|------|------|
+| `templates/cover-letter.template.html` | Fixed print layout (A4, typography) |
+| `scripts/render_cover_letter.py` | Parses `cover-letter.md`, injects into template, optional PDF |
+
+**Command** (from any cwd):
+
+```bash
+python3 ~/.agents/skills/job-application-expert/scripts/render_cover_letter.py \
+  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
+  --lang en \
+  --pdf
+```
+
+- `--application-dir`: folder with `cover-letter.md` and `cv-tailored.json`
+- `--lang`: required if not in frontmatter (`en` / `de` / `fr`)
+- `--pdf`: writes `cover-letter.html` and `cover-letter.pdf`
+
+Outputs in the application folder: `cover-letter.html`, `cover-letter.pdf`.
+
+If no Chromium/Chrome binary found, script still writes HTML; note in Phase 11 summary.
+
+**Agent rules:** write markdown only in Phase 8; run script once in 8b; do not edit the template unless user asks for design changes.
 
 ### Phase 9 — Validate Layout
 
@@ -205,7 +243,7 @@ If it fails:
 
 Call `mcp_cv_workflow_request_cv_pdf` with the final tailored CV JSON.
 
-Save the resulting PDF as `cv-tailored.pdf` in the output folder. Download from the server's `/downloads/` path.
+Save the resulting PDF as `Gregor_Faurobert_$role_$company.pdf` in the output folder. Download from the server's `/downloads/` path.
 
 ### Phase 11 — Final Summary
 

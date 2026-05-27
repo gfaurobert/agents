@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cover letter — {{NAME}}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.4cm 2.2cm 2.2cm 2.2cm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .sender {
+      margin-bottom: 1.75rem;
+    }
+
+    .sender .name {
+      font-size: 12pt;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin: 0 0 0.35rem;
+    }
+
+    .sender .contact {
+      margin: 0;
+      font-size: 10pt;
+      color: #333;
+    }
+
+    .recipient {
+      margin-bottom: 1.25rem;
+    }
+
+    .recipient p {
+      margin: 0 0 0.15rem;
+    }
+
+    .date {
+      margin: 0 0 1.25rem;
+    }
+
+    .subject {
+      font-weight: 600;
+      margin: 0 0 1.1rem;
+    }
+
+    .salutation {
+      margin: 0 0 0.9rem;
+    }
+
+    .body p {
+      margin: 0 0 0.85rem;
+      text-align: justify;
+      hyphens: auto;
+    }
+
+    .body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .closing {
+      margin-top: 1.1rem;
+    }
+
+    .closing .line {
+      margin: 0 0 0.2rem;
+    }
+
+    .closing .signature {
+      margin-top: 1.5rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="sender">
+    <p class="name">{{SENDER_NAME}}</p>
+    <p class="contact">{{SENDER_CONTACT}}</p>
+  </header>
+
+  <div class="recipient">{{RECIPIENT_HTML}}</div>
+
+  <p class="date">{{DATE}}</p>
+
+  {{SUBJECT_BLOCK}}
+
+  <p class="salutation">{{SALUTATION}}</p>
+
+  <div class="body">{{BODY_HTML}}</div>
+
+  <div class="closing">
+    <p class="line">{{CLOSING}}</p>
+    <p class="signature">{{SIGNATURE}}</p>
+  </div>
+</body>
+</html>
