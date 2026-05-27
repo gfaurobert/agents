@@ -66,6 +66,15 @@
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-05-02T06:07:30.259Z",
       "updatedAt": "2026-05-02T06:07:30.259Z"
+    },
+    "linkedin-posts": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/kostja94/marketing-skills.git",
+      "skillPath": "skills/platforms/linkedin/SKILL.md",
+      "skillFolderHash": "fc6335bdc8a892c20ee62671940bae29988e9f51",
+      "installedAt": "2026-05-23T09:01:42.306Z",
+      "updatedAt": "2026-05-23T09:01:42.306Z"
     }
   },
   "dismissed": {
