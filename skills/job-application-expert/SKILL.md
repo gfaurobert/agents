@@ -21,6 +21,47 @@ Guides the user through tailoring their CV and generating a cover letter + PDF f
 
 ---
 
+## Helper Scripts (reuse every session)
+
+Skill root: `~/.agents/skills/job-application-expert/scripts/`
+
+| Script | Purpose |
+|--------|---------|
+| `validate_cv_layout.py` | `validate_cv_schema` + `validate_cv_layout` on `cv-tailored.json` |
+| `download_cv_pdf.py` | Layout gate + `request_cv_pdf` + save PDF locally |
+| `render_cover_letter_pdf.py` | `cover-letter.md` → `cover-letter.html` + `cover-letter.pdf` |
+| `finalize_application.py` | Runs download + cover letter PDF in one step |
+
+Auth is read from `~/.cursor/mcp.json` → `mcpServers.cv-workflow` (no manual token handling).
+
+```bash
+# Layout check only
+python3 ~/.agents/skills/job-application-expert/scripts/validate_cv_layout.py \
+  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
+  --lang en
+
+# CV PDF (validates layout first)
+python3 ~/.agents/skills/job-application-expert/scripts/download_cv_pdf.py \
+  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
+  --output ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/Gregor_Faurobert_PM_Company.pdf \
+  --lang en
+
+# Cover letter PDF
+python3 ~/.agents/skills/job-application-expert/scripts/render_cover_letter_pdf.py \
+  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
+  --lang en
+
+# Both PDFs
+python3 ~/.agents/skills/job-application-expert/scripts/finalize_application.py \
+  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
+  --cv-filename Gregor_Faurobert_PM_Company.pdf \
+  --lang en
+```
+
+**Completion gate:** `finalize_application.py` must exit 0 and both PDFs must exist and be non-empty. Prefer these scripts over hand-rolled curl/MCP calls.
+
+---
+
 ## Output Folder Convention
 
 **Always** create a dedicated subfolder before writing any artifact. Use this naming pattern:
@@ -71,7 +112,7 @@ Call `mcp_cv_workflow_get_full_cv`. Try `en` first. If the user's CV has version
 
 ## Output Style (Critical)
 
-Phases 3, 4, 5, and 11 are read by the user as decision points. Always use **bullet points, minimal prose**. Less is more. No paragraphs of reasoning — the user wants to scan and decide, not read an essay.
+Phases 3, 4, 5, and 12 are read by the user as decision points. Always use **bullet points, minimal prose**. Less is more. No paragraphs of reasoning — the user wants to scan and decide, not read an essay.
 
 Good:
 ```
@@ -135,18 +176,38 @@ If the target language differs from what was loaded in Phase 2, call `mcp_cv_wor
 
 Modify the CV JSON and save as `cv-tailored.json` in the output folder:
 - Rewrite the **professional summary** to target this specific role
-- Reorder and rephrase **experience bullet points** to emphasize relevant achievements
+- Rephrase **experience bullet points** to emphasize relevant achievements
 - Prioritize **skills** that match the job description
 - Adjust **projects** section if relevant to the role
 - Keep all factual information intact — never invent experience, titles, or dates
 
+**Critical — experience order:** Keep `experience.items` in **reverse chronological order** (newest first). The PDF renderer splits at `floor(n/2)` across two pages; reordering entries breaks page 2 even when layout validation reports OK. Tailor by rewriting bullets, not by moving entries.
+
 ### Phase 7 — Validate CV Schema
 
-Call `mcp_cv_workflow_validate_cv_schema` with the tailored CV JSON.
+Call `validate_cv_schema` (MCP or `validate_cv_layout.py` which also runs schema) with the full `cv-tailored.json` object as `data`.
 
 If validation fails, fix the issues and re-validate. Do not proceed until schema validation passes.
 
-### Phase 8 — Write the Cover Letter
+### Phase 8 — Validate CV Layout (mandatory gate)
+
+Call `validate_cv_layout` with the same full `data` object and matching `lang`.
+
+**Or run:** `validate_cv_layout.py --application-dir … --lang en`
+
+**This must pass before any CV PDF is generated.** Do not call `request_cv_pdf` or `download_cv_pdf.py` until the result is `Layout OK` (exit 0, not `isError`).
+
+If validation fails, follow the remediation message, then re-validate until it passes.
+
+**Page 2 hygiene:** The tool only blocks page 1 overflow. If `page2_overflow` is high (>15mm), shorten bullets in later experience entries and sidebar text even when page 1 is OK.
+
+### Phase 9 — Download CV PDF
+
+**Prefer:** `download_cv_pdf.py` (runs layout validation + `request_cv_pdf` + local save).
+
+Save as `Gregor_Faurobert_$role_$company.pdf` in the application folder. Verify the file exists and is non-empty.
+
+### Phase 10 — Write the Cover Letter
 
 Write letter content only. Layout/CSS handled by the skill template — do not write HTML.
 
@@ -195,68 +256,39 @@ Body paragraphs (blank line between each)...
 
 **Tone (after witty-writer):** confident, direct, specific, ~300–400 words — see `witty-writer` skill for rhythm and anti-boilerplate rules.
 
-Final artifact: `cover-letter.md` (post–witty-writer). Render that file in Phase 8b, not the draft.
+Final artifact: `cover-letter.md` (post–witty-writer). Render that file in Phase 11, not the draft.
 
-### Phase 8b — Render Cover Letter HTML + PDF
+### Phase 11 — Render Cover Letter PDF (mandatory)
 
-Do **not** hand-build HTML. Use the skill template + render script.
+Do **not** hand-build HTML. Use `render_cover_letter_pdf.py` (wraps `render_cover_letter.py`).
 
-**Paths** (skill root: `~/.agents/skills/job-application-expert/`):
-
-| File | Role |
-|------|------|
-| `templates/cover-letter.template.html` | Fixed print layout (A4, typography) |
-| `scripts/render_cover_letter.py` | Parses `cover-letter.md`, injects into template, optional PDF |
-
-**Command** (from any cwd):
+**`cover-letter.pdf` is required.** The render script tries Chromium, then WeasyPrint, then wkhtmltopdf. One-time setup if no browser is installed:
 
 ```bash
-python3 ~/.agents/skills/job-application-expert/scripts/render_cover_letter.py \
-  --application-dir ~/Nextcloud/Documents/CV/<company>-<role>-<YYYY-MM-DD>/ \
-  --lang en \
-  --pdf
+python3 -m venv ~/.agents/skills/job-application-expert/.venv
+~/.agents/skills/job-application-expert/.venv/bin/pip install weasyprint
 ```
 
-- `--application-dir`: folder with `cover-letter.md` and `cv-tailored.json`
-- `--lang`: required if not in frontmatter (`en` / `de` / `fr`)
-- `--pdf`: writes `cover-letter.html` and `cover-letter.pdf`
+`render_cover_letter_pdf.py` uses that venv automatically when present.
 
-Outputs in the application folder: `cover-letter.html`, `cover-letter.pdf`.
+Do **not** finish with HTML only.
 
-If no Chromium/Chrome binary found, script still writes HTML; note in Phase 11 summary.
+### Phase 12 — Final Summary
 
-**Agent rules:** write markdown only in Phase 8; run script once in 8b; do not edit the template unless user asks for design changes.
-
-### Phase 9 — Validate Layout
-
-Call `mcp_cv_workflow_validate_cv_layout` with the tailored CV JSON.
-
-This checks that the CV fits within the 2-page PDF layout constraint.
-
-If it fails:
-- Trim or consolidate bullet points
-- Remove less relevant entries
-- Shorten the professional summary
-- Re-validate until it passes
-
-### Phase 10 — Generate PDF
-
-Call `mcp_cv_workflow_request_cv_pdf` with the final tailored CV JSON.
-
-Save the resulting PDF as `Gregor_Faurobert_$role_$company.pdf` in the output folder. Download from the server's `/downloads/` path.
-
-### Phase 11 — Final Summary
+**Completion gate:** Both `Gregor_Faurobert_$role_$company.pdf` and `cover-letter.pdf` must exist in the application folder. `finalize_application.py` exit 0 is the preferred check.
 
 Bullet points only:
 
 - Path to tailored CV PDF
-- Path to cover letter
-- 2-3 key changes made (e.g. "reoriented summary toward B2B growth, added APAC negotiation example from off-book experience")
-- Any caveats (missing evidence for a specific need, something the user should verify)
+- Path to cover letter PDF
+- Layout validation result (page1/page2 overflow)
+- 2-3 key changes made
+- Any caveats
 
 ## Pitfalls
 
-- **Never fabricate experience** — only rephrase, reorder, or re-emphasize existing content
-- **Don't skip validation** — schema and layout checks catch real issues before PDF generation
+- **Never fabricate experience** — only rephrase or re-emphasize; never reorder experience out of reverse chronological order
+- **Don't skip layout validation** — must pass before `download_cv_pdf.py` / `request_cv_pdf`; pass full `data`, not just `lang`
+- **Don't hand-download PDFs** — use `download_cv_pdf.py` instead of raw curl with tokens
 - **Language consistency** — if the job is in French, output CV and cover letter in French
-- **If MCP tools are unavailable**, first run `hermes mcp test cv-workflow` to check connectivity. If the test passes but tools still aren't in your function list (common after `/reload-mcp` or in sessions started before the MCP server was configured), use the raw MCP protocol fallback via `execute_code` — see the `native-mcp` skill's `references/fallback-mcp-calls.md` for the working SSE Python approach. The config is `transport: sse`, the token is in `~/.hermes/config.yaml` under `mcp_servers.cv-workflow.headers.Authorization`, and the endpoint sessions are per-call (no persistent session reuse).
+- **If MCP tools are unavailable in the agent**, use the helper scripts (`cv_workflow_client.py` via `download_cv_pdf.py` / `validate_cv_layout.py`) — they call the same SSE endpoint using `~/.cursor/mcp.json`.

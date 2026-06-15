@@ -408,10 +408,17 @@ def find_chromium() -> str | None:
         path = shutil.which(name)
         if path:
             return path
+    for candidate in (
+        "/usr/bin/chromium",
+        "/usr/bin/google-chrome-stable",
+        "/opt/google/chrome/google-chrome",
+    ):
+        if Path(candidate).is_file():
+            return candidate
     return None
 
 
-def print_pdf(chromium: str, html_path: Path, pdf_path: Path) -> None:
+def print_pdf_chromium(chromium: str, html_path: Path, pdf_path: Path) -> None:
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         chromium,
@@ -422,6 +429,47 @@ def print_pdf(chromium: str, html_path: Path, pdf_path: Path) -> None:
         str(html_path.resolve()),
     ]
     subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+
+def print_pdf_weasyprint(html_path: Path, pdf_path: Path) -> None:
+    from weasyprint import HTML
+
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    HTML(filename=str(html_path.resolve())).write_pdf(str(pdf_path.resolve()))
+
+
+def print_pdf_wkhtmltopdf(wkhtml: str, html_path: Path, pdf_path: Path) -> None:
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [wkhtml, "--enable-local-file-access", str(html_path.resolve()), str(pdf_path.resolve())],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def write_pdf(html_path: Path, pdf_path: Path) -> str:
+    """Return the backend name used, or raise RuntimeError if none worked."""
+    chromium = find_chromium()
+    if chromium:
+        print_pdf_chromium(chromium, html_path, pdf_path)
+        return "chromium"
+
+    try:
+        print_pdf_weasyprint(html_path, pdf_path)
+        return "weasyprint"
+    except ImportError:
+        pass
+
+    wkhtml = shutil.which("wkhtmltopdf")
+    if wkhtml:
+        print_pdf_wkhtmltopdf(wkhtml, html_path, pdf_path)
+        return "wkhtmltopdf"
+
+    raise RuntimeError(
+        "No PDF backend available. Install one of: chromium, weasyprint "
+        "(pip install weasyprint), or wkhtmltopdf."
+    )
 
 
 def main() -> int:
@@ -477,12 +525,16 @@ def main() -> int:
     print(f"Wrote {html_out}")
 
     if args.pdf:
-        chromium = find_chromium()
-        if not chromium:
-            print("Chromium not found — HTML only.", file=sys.stderr)
+        try:
+            backend = write_pdf(html_out, pdf_out)
+            print(f"Wrote {pdf_out} ({backend})")
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            print("HTML written but cover-letter.pdf is missing.", file=sys.stderr)
             return 2
-        print_pdf(chromium, html_out, pdf_out)
-        print(f"Wrote {pdf_out}")
+        if not pdf_out.is_file() or pdf_out.stat().st_size == 0:
+            print(f"PDF generation failed: {pdf_out}", file=sys.stderr)
+            return 2
 
     return 0
 

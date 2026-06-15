@@ -84,6 +84,44 @@
       "skillFolderHash": "0f1f5e31ce921513828ac8f440f358df6fa0751a",
       "installedAt": "2026-05-22T13:07:49.527Z",
       "updatedAt": "2026-05-22T13:07:49.527Z"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/supabase/agent-skills.git",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "skillFolderHash": "6f1495c72c918e6f80c2f69df9005eacd5c57d7a",
+      "pluginName": "postgres-best-practices",
+      "installedAt": "2026-06-08T09:58:59.313Z",
+      "updatedAt": "2026-06-08T09:58:59.313Z"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/supabase/agent-skills.git",
+      "skillPath": "skills/supabase/SKILL.md",
+      "skillFolderHash": "9911179cac6d704329e20c6d27b94175121a4160",
+      "pluginName": "supabase",
+      "installedAt": "2026-06-08T09:58:59.316Z",
+      "updatedAt": "2026-06-08T09:58:59.316Z"
+    },
+    "freecad-scripts": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/github/awesome-copilot.git",
+      "skillPath": "skills/freecad-scripts/SKILL.md",
+      "skillFolderHash": "07b72dce0f43f8ac0a40e600b319fd559b0c3d53",
+      "installedAt": "2026-06-10T11:37:23.786Z",
+      "updatedAt": "2026-06-10T11:37:23.786Z"
+    },
+    "linkedin-profile-optimizer": {
+      "source": "paramchoudhary/resumeskills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/paramchoudhary/resumeskills.git",
+      "skillPath": "skills/linkedin-profile-optimizer/SKILL.md",
+      "skillFolderHash": "7e19df4f78fef97fc1bd000c77a2f94879f4257e",
+      "installedAt": "2026-06-15T06:30:10.450Z",
+      "updatedAt": "2026-06-15T06:30:10.450Z"
     }
   },
   "dismissed": {
@@ -92,16 +130,16 @@
   "lastSelectedAgents": [
     "amp",
     "antigravity",
+    "antigravity-cli",
     "cline",
     "codex",
     "cursor",
     "deepagents",
-    "dexto",
-    "firebender",
     "gemini-cli",
     "github-copilot",
-    "kimi-cli",
+    "kimi-code-cli",
     "opencode",
-    "warp"
+    "warp",
+    "zed"
   ]
 }
