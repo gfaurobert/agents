@@ -122,6 +122,34 @@
       "skillFolderHash": "7e19df4f78fef97fc1bd000c77a2f94879f4257e",
       "installedAt": "2026-06-15T06:30:10.450Z",
       "updatedAt": "2026-06-15T06:30:10.450Z"
+    },
+    "handoff": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/productivity/handoff/SKILL.md",
+      "skillFolderHash": "7bbb60d64c911617cee7f71b2ba9e24364faa14e",
+      "pluginName": "mattpocock-skills",
+      "installedAt": "2026-06-16T07:07:24.033Z",
+      "updatedAt": "2026-06-16T07:07:24.033Z"
+    },
+    "banner-design": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+      "skillPath": ".claude/skills/banner-design/SKILL.md",
+      "skillFolderHash": "0179fd7d727a3d879c2ec7aa0f70bd1c185ecb6f",
+      "installedAt": "2026-06-29T11:22:39.904Z",
+      "updatedAt": "2026-06-29T11:22:39.904Z"
+    },
+    "opencode-config": {
+      "source": "igorwarzocha/opencode-workflows",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/igorwarzocha/opencode-workflows.git",
+      "skillPath": ".opencode/skill/opencode-config/SKILL.md",
+      "skillFolderHash": "89da979f6eefdd54d63d37fd12b1838954175f8c",
+      "installedAt": "2026-07-01T07:19:07.515Z",
+      "updatedAt": "2026-07-01T07:19:07.515Z"
     }
   },
   "dismissed": {
