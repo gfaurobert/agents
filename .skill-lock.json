@@ -76,6 +76,15 @@
       "installedAt": "2026-05-23T09:01:42.306Z",
       "updatedAt": "2026-05-23T09:01:42.306Z"
     },
+    "gstack": {
+      "source": "garrytan/gstack",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/garrytan/gstack.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "9fd03fae9e74f5daa7a138366aca8f86c7367c5c",
+      "installedAt": "2026-06-25T13:41:23.726Z",
+      "updatedAt": "2026-06-25T13:45:44.433Z"
+    },
     "seo-audit": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",

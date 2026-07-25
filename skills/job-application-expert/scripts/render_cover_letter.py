@@ -401,6 +401,8 @@ def find_chromium() -> str | None:
     for name in (
         "chromium",
         "chromium-browser",
+        "brave",
+        "brave-browser",
         "google-chrome-stable",
         "google-chrome",
         "chrome",
