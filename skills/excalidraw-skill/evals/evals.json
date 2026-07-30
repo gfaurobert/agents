@@ -3,32 +3,32 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "Draw a CI/CD pipeline architecture diagram on the Excalidraw canvas with these components: GitHub (source), GitHub Actions (CI), Docker Registry (artifact store), and Kubernetes Cluster (deployment target). Use arrows to show the flow from left to right. Make sure labels fit inside each box and nothing overlaps.",
-      "expected_output": "A clean diagram with 4 labeled boxes, left-to-right flow arrows connecting them, no overlapping elements, and all text fully visible inside shapes.",
+      "prompt": "Sketch a simple login wireframe: email field, password field, and a primary Login button. Save it under sketches/.",
+      "expected_output": "A valid sketches/<name>.excalidraw file with rectangle+text elements for the fields and button, no MCP or canvas server used, and the user told how to open it in excalidraw-offline.",
       "files": []
     },
     {
       "id": 1,
-      "prompt": "Convert this Mermaid flowchart to an Excalidraw diagram:\n```\ngraph TD\n  A[User] -->|HTTP Request| B[Load Balancer]\n  B --> C[Web Server 1]\n  B --> D[Web Server 2]\n  C --> E[(Database)]\n  D --> E\n```\nAfter converting, take a screenshot and verify the layout looks clean.",
-      "expected_output": "A valid Excalidraw diagram with all 5 nodes and arrows matching the Mermaid structure, verified with a screenshot.",
+      "prompt": "Draw an architecture diagram with Client → API → Postgres as labeled boxes and arrows. Put it in sketches/api-flow.excalidraw.",
+      "expected_output": "sketches/api-flow.excalidraw exists with three nodes, bound or free-standing labels, and arrows with startBinding/endBinding. No mcp-excalidraw-server or MCP tools invoked.",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "Create a simple diagram on the Excalidraw canvas with two rectangles: 'Auth Service' and 'User DB', connected by an arrow labeled 'queries'. Then refine it: add a third box 'Redis Cache' positioned between the two services, connect Auth Service to Redis Cache with a 'cache hit' arrow. Verify visually that all labels are visible and no arrows cross awkwardly.",
-      "expected_output": "A 3-element diagram with Auth Service → Redis Cache → (and both connected back to) User DB, with clean arrows, visible labels, and a screenshot confirming the final state.",
+      "prompt": "Create a CAD object sketch of a small enclosure: front outline, four mounting holes, and a callout for M4 screws. Then update the sketch to add a side-view outline.",
+      "expected_output": "One .excalidraw under sketches/ created then updated in place (CRUD), with view labels and feature callouts; agent notes exact dims belong in FreeCAD/ForgeCAD.",
       "files": []
     },
     {
       "id": 3,
-      "prompt": "Without using any MCP tools (assume none are configured), use only the CLI (`npx -y mcp-excalidraw-server <command>`) to: (1) build a three-tier diagram with boxes 'Frontend', 'API', and 'Postgres' connected by arrows, (2) query for all rectangles and confirm the count is 3, (3) save a snapshot named 'v1', (4) export the scene to /tmp/three-tier.excalidraw, and (5) report the canvas status including how many browser tabs are connected.",
-      "expected_output": "All five steps completed via CLI commands only: elements created with bound arrows (the canvas server auto-starts), a query result showing 3 rectangles, a saved snapshot 'v1', a valid .excalidraw file at /tmp/three-tier.excalidraw, and a status report with element and browser-client counts.",
+      "prompt": "List sketches in the workspace, open an existing sketches/smoke-test.excalidraw if present (or create it), add a title text 'Smoke', and confirm the file still validates as type=excalidraw version=2.",
+      "expected_output": "File-backed read/update only under sketches/; document still has type, version, elements, appState, files; no Obsidian .excalidraw.md and no canvas server.",
       "files": []
     },
     {
       "id": 4,
-      "prompt": "Using only the CLI, draw two labeled boxes ('Client', 'Server') connected by an arrow, then save the diagram into an Obsidian vault at /tmp/vault/diagrams/flow.excalidraw.md (assume /tmp/vault/.obsidian exists; create the diagrams folder if needed). Clear the canvas and re-import the saved file. Confirm the saved file is in the Obsidian Excalidraw plugin's markdown format (frontmatter + '# Excalidraw Data' + a '## Drawing' code block) rather than raw JSON, and that both boxes are back on the canvas after the re-import.",
-      "expected_output": "flow.excalidraw.md written in the Obsidian new format (not raw .excalidraw JSON), format markers verified by reading the file, and the canvas restored with both labeled boxes and their arrow after `import --replace`.",
+      "prompt": "Delete the sketch sketches/tmp-delete-me.excalidraw after creating a throwaway one with that name.",
+      "expected_output": "Create then delete under sketches/; leftover assets cleaned if any; no git commit unless asked.",
       "files": []
     }
   ]

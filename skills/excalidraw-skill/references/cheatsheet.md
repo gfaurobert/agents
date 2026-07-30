@@ -1,192 +1,284 @@
-# Excalidraw Skill Cheatsheet
+# Excalidraw offline — file & element cheatsheet
 
-## Defaults
+Companion to `excalidraw-skill`. Agents CRUD `.excalidraw` files under
+`sketches/`. No MCP, no canvas server.
 
-- Canvas base URL: `EXPRESS_SERVER_URL` (default `http://127.0.0.1:3000`); CLI also accepts `--url <canvasUrl>`
-- Canvas health: `GET /health` or `npx -y mcp-excalidraw-server status`
-- Auto-start: any canvas-touching CLI command starts the server if it's down (opt out with `EXCALIDRAW_NO_AUTOSTART=1`)
+## Scene document
 
-## CLI Reference
+```json
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "excalidraw-offline-bin",
+  "elements": [],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 20
+  },
+  "files": {}
+}
+```
 
-`npx -y mcp-excalidraw-server <command>` (or `excalidraw-canvas <command>` after `npm i -g`).
-JSON results on stdout — except `describe` (plain text) and raw-content output when `--out` is omitted (`export` scene JSON, `screenshot --format svg`). Diagnostics on stderr. Exit codes: 0 ok, 1 error, 2 usage, 3 canvas unreachable, 4 browser tab required. Explicit `start` overrides `EXCALIDRAW_NO_AUTOSTART=1`.
+Write pretty-printed JSON (2 spaces) + trailing newline.
 
-### Server
+### Images (`files` + `assets/`)
 
-| Command | Description |
-|---------|-------------|
-| `start` | Start the canvas server (detached); prints URL + pid |
-| `stop` | Stop the canvas server (identity-checked via `/health` — never signals foreign services) |
-| `status` | Health, element count, connected browser tabs |
+On-disk form (what Excalidraw Offline writes):
 
-### Elements
+```json
+"files": {
+  "a1b2c3": {
+    "mimeType": "image/png",
+    "id": "a1b2c3",
+    "path": "assets/a1b2c3.png",
+    "created": 1710000000000
+  }
+}
+```
 
-| Command | Description |
-|---------|-------------|
-| `add [file\|-]` | Batch create from a JSON array (file, `-`, or piped stdin); `--one '{...}'` for a single element |
-| `apply [file\|-]` | Multi-op patch `{"create":[...],"update":[{"id":"a","set":{...}}],"delete":["id",...]}` in one call |
-| `get <id>` | Get one element |
-| `query` | `--type rectangle` `--bbox x0,y0,x1,y1` `--filter locked=true` (typed; nested keys like `label.text=API` work) `--filter-json '{...}'` |
-| `update <id> --set '{...}'` | Update one element |
-| `delete <id> [...]` | Delete elements |
+Binary at `sketches/assets/<id>.png` (sibling `assets/` of the `.excalidraw`
+file’s directory). Upstream embedded `dataURL` entries also open, but prefer
+path refs when adding images for the offline app.
 
-### Scene
+Supported extensions: `png`, `jpg`, `gif`, `webp`, `svg`.
 
-| Command | Description |
-|---------|-------------|
-| `describe` | AI-readable scene summary (ids, positions, labels, connections) — plain text |
-| `screenshot` | PNG/SVG capture; `--out f.png`, `--format png\|svg`, `--no-background`; PNG without `--out` → temp file path in JSON, SVG without `--out` → raw SVG (**browser tab required**) |
-| `export [--out f.excalidraw] [--format json\|obsidian]` | Scene as .excalidraw JSON (stdout without `--out`); a `.md` out path writes Obsidian's .excalidraw.md format |
-| `import [file\|-] [--replace]` | Import .excalidraw JSON or Obsidian .excalidraw.md (merge by default) |
-| `mermaid [file\|-]` | Render Mermaid onto the canvas (**browser tab required**) |
-| `share` | Encrypted upload → shareable excalidraw.com URL |
-| `clear --yes` | Wipe the canvas |
-| `snapshot save\|list\|restore [name]` | Named canvas snapshots |
+## Shared element fields
 
-### Arrange
+Every non-deleted element should include:
 
-| Command | Description |
-|---------|-------------|
-| `arrange align --ids a,b,c --to left\|center\|right\|top\|middle\|bottom` | Align (≥2 ids) |
-| `arrange distribute --ids a,b,c --to horizontal\|vertical` | Even spacing (≥3 ids) |
-| `arrange group --ids a,b` / `arrange ungroup --group <groupId>` | Group membership lives on element `groupIds` |
-| `arrange lock\|unlock --ids a,b` | Toggle edit lock |
-| `arrange duplicate --ids a,b [--offset 20,20]` | Clone with offset |
+| Field | Notes |
+|-------|--------|
+| `id` | Stable string; agent-chosen kebab or short id |
+| `type` | `rectangle` \| `ellipse` \| `diamond` \| `text` \| `arrow` \| `line` \| `image` \| … |
+| `x`, `y` | Top-left (text: baseline origin behaves like Excalidraw text) |
+| `width`, `height` | Box size; for arrows/lines often bbox of `points` |
+| `angle` | Radians; usually `0` |
+| `strokeColor` | e.g. `#1e1e1e` |
+| `backgroundColor` | `"transparent"` or pastel fill |
+| `fillStyle` | Prefer `"solid"` |
+| `strokeWidth` | `1`–`4`; default `2` |
+| `strokeStyle` | `"solid"` \| `"dashed"` \| `"dotted"` |
+| `roughness` | `0` for crisp wireframe/CAD; `1` sketchy |
+| `opacity` | `0`–`100` |
+| `groupIds` | `[]` or group id strings |
+| `frameId` | `null` unless using frames |
+| `roundness` | `{ "type": 3 }` rounded rect; `null` sharp |
+| `seed`, `versionNonce` | Integers (any stable ints are fine) |
+| `isDeleted` | `false` |
+| `boundElements` | `[]` or `[{ "type": "text"\|"arrow", "id": "..." }]` |
+| `updated` | Integer timestamp-ish |
+| `link` | `null` |
+| `locked` | `false` |
 
-### Meta
+## Shape + bound label
 
-| Command | Description |
-|---------|-------------|
-| `install-skill --dir <skills-root>` | Install this skill into an agent-chosen project/global skills root (replaces any existing copy) |
-| `help [command]`, `--version` | Usage and version |
+```json
+[
+  {
+    "id": "node-api",
+    "type": "rectangle",
+    "x": 200,
+    "y": 120,
+    "width": 180,
+    "height": 64,
+    "angle": 0,
+    "strokeColor": "#1971c2",
+    "backgroundColor": "#a5d8ff",
+    "fillStyle": "solid",
+    "strokeWidth": 2,
+    "strokeStyle": "solid",
+    "roughness": 0,
+    "opacity": 100,
+    "groupIds": [],
+    "frameId": null,
+    "roundness": { "type": 3 },
+    "seed": 11,
+    "versionNonce": 11,
+    "isDeleted": false,
+    "boundElements": [{ "type": "text", "id": "node-api-label" }],
+    "updated": 1,
+    "link": null,
+    "locked": false
+  },
+  {
+    "id": "node-api-label",
+    "type": "text",
+    "x": 220,
+    "y": 138,
+    "width": 140,
+    "height": 28,
+    "angle": 0,
+    "strokeColor": "#1e1e1e",
+    "backgroundColor": "transparent",
+    "fillStyle": "solid",
+    "strokeWidth": 2,
+    "strokeStyle": "solid",
+    "roughness": 0,
+    "opacity": 100,
+    "groupIds": [],
+    "frameId": null,
+    "roundness": null,
+    "seed": 12,
+    "versionNonce": 12,
+    "isDeleted": false,
+    "boundElements": null,
+    "updated": 1,
+    "link": null,
+    "locked": false,
+    "text": "API",
+    "fontSize": 20,
+    "fontFamily": 5,
+    "textAlign": "center",
+    "verticalAlign": "middle",
+    "containerId": "node-api",
+    "originalText": "API",
+    "autoResize": true,
+    "lineHeight": 1.25
+  }
+]
+```
 
-## MCP Tools (26 total)
+`fontFamily`: `1` Virgil, `2` Helvetica, `3` Cascadia, `5` Excalifont — prefer
+`5` or `2` for UI wireframes.
 
-### Element CRUD
+## Free-standing zone title
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `create_element` | Create shape/text/arrow/line | `type`, `x`, `y` |
-| `get_element` | Get single element by ID | `id` |
-| `update_element` | Update element properties | `id` |
-| `delete_element` | Delete element | `id` |
-| `query_elements` | Query by type/filters | (optional) `type`, `filter`, `bbox` |
-| `batch_create_elements` | Create many at once | `elements[]` |
-| `duplicate_elements` | Clone with offset | `elementIds[]`, (optional) `offsetX`, `offsetY` |
+```json
+{
+  "id": "zone-vpc",
+  "type": "rectangle",
+  "x": 40,
+  "y": 40,
+  "width": 720,
+  "height": 420,
+  "strokeColor": "#1971c2",
+  "backgroundColor": "#e7f5ff",
+  "fillStyle": "solid",
+  "strokeStyle": "dashed",
+  "roughness": 0,
+  "boundElements": [],
+  "...": "plus shared fields"
+},
+{
+  "id": "zone-vpc-title",
+  "type": "text",
+  "x": 56,
+  "y": 52,
+  "width": 280,
+  "height": 28,
+  "text": "VPC",
+  "originalText": "VPC",
+  "fontSize": 18,
+  "fontFamily": 2,
+  "textAlign": "left",
+  "verticalAlign": "top",
+  "containerId": null,
+  "...": "plus shared fields; boundElements null"
+}
+```
 
-### Layout & Organization
+## Arrow with bindings
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `align_elements` | Align to left/center/right/top/middle/bottom | `elementIds[]`, `alignment` |
-| `distribute_elements` | Even spacing horizontal/vertical | `elementIds[]`, `direction` |
-| `group_elements` | Group elements | `elementIds[]` |
-| `ungroup_elements` | Ungroup | `groupId` |
-| `lock_elements` | Lock elements | `elementIds[]` |
-| `unlock_elements` | Unlock elements | `elementIds[]` |
+`points` are **relative** to the arrow element’s `x`/`y`.
 
-### Scene Awareness (Iterative Refinement)
+```json
+{
+  "id": "arr-1",
+  "type": "arrow",
+  "x": 290,
+  "y": 152,
+  "width": 200,
+  "height": 0,
+  "angle": 0,
+  "strokeColor": "#1e1e1e",
+  "backgroundColor": "transparent",
+  "fillStyle": "solid",
+  "strokeWidth": 2,
+  "strokeStyle": "solid",
+  "roughness": 0,
+  "opacity": 100,
+  "groupIds": [],
+  "frameId": null,
+  "roundness": { "type": 2 },
+  "seed": 21,
+  "versionNonce": 21,
+  "isDeleted": false,
+  "boundElements": null,
+  "updated": 1,
+  "link": null,
+  "locked": false,
+  "points": [[0, 0], [200, 0]],
+  "lastCommittedPoint": null,
+  "startBinding": {
+    "elementId": "node-api",
+    "focus": 0,
+    "gap": 8
+  },
+  "endBinding": {
+    "elementId": "node-db",
+    "focus": 0,
+    "gap": 8
+  },
+  "startArrowhead": null,
+  "endArrowhead": "arrow"
+}
+```
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `describe_scene` | AI-readable scene description (types, positions, labels, connections, bounding box) | (none) |
-| `get_canvas_screenshot` | Returns PNG image of canvas for visual verification | (optional) `background` |
-| `get_resource` | Get scene/library/theme/elements | `resource` |
+Elbowed route: multiple points, e.g.
+`[[0,0],[0,-40],[220,-40],[220,0]]`.
 
-### File I/O & Export
+Also push `{ "type": "arrow", "id": "arr-1" }` into each endpoint’s
+`boundElements`.
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `export_scene` | Export to .excalidraw JSON (a `.md` filePath → Obsidian .excalidraw.md) | (optional) `filePath` |
-| `import_scene` | Import from .excalidraw JSON or Obsidian .excalidraw.md | `mode` ("replace"\|"merge"), `filePath` or `data` |
-| `export_to_image` | Export to PNG/SVG (needs browser) | `format` ("png"\|"svg"), (optional) `filePath`, `background` |
-| `export_to_excalidraw_url` | Upload & get shareable excalidraw.com URL | (none) |
+## Palette (stroke / fill)
 
-### State Management
+| Name | Stroke | Fill |
+|------|--------|------|
+| Red | `#e03131` | `#ffc9c9` |
+| Green | `#2f9e44` | `#b2f2bb` |
+| Blue | `#1971c2` | `#a5d8ff` |
+| Orange | `#e8590c` | `#ffd8a8` |
+| Cyan | `#0c8599` | `#99e9f2` |
+| Gray | `#868e96` | `#e9ecef` |
+| Ink | `#1e1e1e` | `transparent` |
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `clear_canvas` | Remove all elements | (none) |
-| `snapshot_scene` | Save named snapshot | `name` |
-| `restore_snapshot` | Restore from snapshot | `name` |
+Wireframes: gray fills + blue accent for primary CTA. CAD sketches: light fills,
+dark strokes, dashed for hidden/section edges.
 
-### Viewport & Camera
+## Sizing defaults
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `set_viewport` | Control camera: zoom-to-fit all/selected elements, center one element without changing zoom, or manual zoom/scroll (needs browser); specify one mode per request | (optional) `scrollToContent`, `scrollToElementIds`, `viewportZoomFactor` (0, 1], `scrollToElementId`, `zoom`, `offsetX`, `offsetY` |
+| Kind | Size |
+|------|------|
+| Button / field | ≥ 120×40 |
+| Diagram node | ≥ 160×60; width ≥ `chars * 12` |
+| Screen frame | ≥ 320×480 (mobile) or 640×400 (desktop panel) |
+| Font body | ≥ 16 |
+| Font title | ≥ 20 |
+| Grid | 20px |
 
-### Design Guide
+## Minimal empty sketch
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `read_diagram_guide` | Get design best practices (colors, sizing, layout, anti-patterns) | (none) |
+Path: `sketches/sketch-abc123.excalidraw`
 
-### Conversion
+```json
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "excalidraw-offline-bin",
+  "elements": [],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 20
+  },
+  "files": {}
+}
+```
 
-| Tool | Description | Required params |
-|------|-------------|-----------------|
-| `create_from_mermaid` | Mermaid diagram to Excalidraw | `mermaidDiagram` |
+## CRUD checklist
 
-Notes:
-- **CLI + MCP**: Set `text` on shapes to label them (auto-converts to `label.text`). Use `startElementId`/`endElementId` on arrows.
-- **CLI `apply.update`**: Update entries can use either direct fields (`{"id":"a","x":120}`) or a `set` object (`{"id":"a","set":{"x":120}}`). Do not mix both forms in one update entry.
-- **Raw REST**: Use `"label": {"text": "..."}` for shape labels. Use `"start": {"id": "..."}` / `"end": {"id": "..."}` for arrow binding. (Different format!)
-- `fontFamily` must be a string (e.g. `"1"`, `"helvetica"`) or omitted — do NOT pass a number.
-- `points` accepts both `[[x,y]]` tuples and `[{x,y}]` objects.
-- **Curved arrows**: Use `"roundness": {"type": 2}` with 3+ points for smooth curves. Use `"elbowed": true` for right-angle routing.
-- Prefer creating shapes first, then arrows, then alignment/grouping.
+- **Create** — write new file under `sketches/`
+- **Read** — parse `elements`; report ids, types, labels (`text` / bound text)
+- **Update** — mutate `elements` / `files`; rewrite file
+- **Delete** — remove `.excalidraw`; remove orphaned `assets/<id>.*` you own
 
-## Canvas REST API (HTTP)
-
-### Elements
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/elements` | List all elements |
-| `GET` | `/api/elements/:id` | Get element by ID |
-| `POST` | `/api/elements` | Create element |
-| `PUT` | `/api/elements/:id` | Update element |
-| `DELETE` | `/api/elements/:id` | Delete element |
-| `DELETE` | `/api/elements/clear` | Clear all elements |
-| `GET` | `/api/elements/search?type=...` | Search with filters (exact string match + bbox) |
-| `POST` | `/api/elements/batch` | Batch create |
-| `POST` | `/api/elements/sync` | Overwrite import (clear + write) |
-| `POST` | `/api/elements/from-mermaid` | Mermaid conversion via frontend |
-
-### Export
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/export/image` | Request image export (needs frontend) |
-| `POST` | `/api/export/image/result` | Frontend posts export result back |
-
-### Viewport
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/viewport` | Set viewport/camera; body may include `scrollToContent`, `scrollToElementIds`, `viewportZoomFactor`, `scrollToElementId`, `zoom`, `offsetX`, `offsetY` (needs frontend) |
-| `POST` | `/api/viewport/result` | Frontend posts viewport result back |
-
-### Snapshots
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/snapshots` | Save snapshot `{name}` |
-| `GET` | `/api/snapshots` | List snapshots |
-| `GET` | `/api/snapshots/:name` | Get snapshot by name |
-
-### System
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check (`websocket_clients` = open browser tabs) |
-| `GET` | `/api/sync/status` | Memory/WebSocket stats |
-
-## Design Guide (quick version)
-
-Stroke/fill pairs: `#e03131`/`#ffc9c9` red, `#2f9e44`/`#b2f2bb` green, `#1971c2`/`#a5d8ff` blue, `#9c36b5`/`#eebefa` purple, `#e8590c`/`#ffd8a8` orange, `#0c8599`/`#99e9f2` cyan, `#868e96`/`#e9ecef` gray.
-Styling: `"fillStyle": "solid"` for crisp flat fills (default is sketchy hachure); `"strokeStyle": "dashed"` for zone borders / async arrows.
-Sizing: shapes ≥ 120×60 with width ≥ `labelChars * 12`, fonts ≥ 16 (titles ≥ 20), gaps 40–80px (120px+ for labeled arrows), align to a 20px grid.
-Order of work: background zones → primary shapes (with `text`) → arrows (bound via ids) → annotations → refine (align/distribute/screenshot).
-MCP mode has the full guide behind the `read_diagram_guide` tool.
+Never start MCP or a canvas HTTP server.
