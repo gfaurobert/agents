@@ -1,6 +1,6 @@
 # Excalidraw offline — file & element cheatsheet
 
-Companion to `excalidraw-skill`. Agents CRUD `.excalidraw` files under
+Companion to `excalidraw-sketching`. Agents CRUD `.excalidraw` files under
 `sketches/`. No MCP, no canvas server.
 
 ## Scene document

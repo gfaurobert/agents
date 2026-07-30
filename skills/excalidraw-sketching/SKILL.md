@@ -1,5 +1,5 @@
 ---
-name: excalidraw-skill
+name: excalidraw-sketching
 description: >-
   AI agent sketching for wireframes, diagrams, and CAD object drawings via
   plain .excalidraw files under sketches/. Use when the user asks to sketch,
